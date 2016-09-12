@@ -1,0 +1,34 @@
+<div id="elm-container"></div>
+<div style="background:yellow">This is not Elm</div>
+
+<script>
+    // Set up our Elm App
+    const elmDiv = document.querySelector("#elm-container");
+    const elmApp = Elm.Cooking.embed(elmDiv);
+
+    elmApp.ports.updateGraph.subscribe(
+        function(model) {
+            var labels = model.map(function(x) {
+                return x[0]
+            })
+
+            var values = model.map(function(x) {
+                return x[1]
+            })
+
+            var ctx = document.getElementById("myChart");
+            var myChart = new Chart.Line(ctx, {
+                data: {
+                    labels: labels,
+                    datasets: [
+                    {
+                        label: "Cooking Data",
+                        lineTension: 0.1,
+                        data: values
+                    }
+                    ]
+                }
+            });
+        })
+
+</script>
