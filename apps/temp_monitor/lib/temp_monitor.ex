@@ -1,9 +1,6 @@
 defmodule TempMonitor do
   use Application
 
-  @interface :eth0
-  @opts [mode: "static", ip: "10.0.10.3", mask: "16", subnet: "255.255.0.0"]
-
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
@@ -12,7 +9,8 @@ defmodule TempMonitor do
     # Define workers and child supervisors to be supervised
     children = [
       supervisor(Phoenix.PubSub.PG2, [Nerves.PubSub, [poolsize: 1]]),
-      worker(Task, [fn -> start_network end], restart: :transient)
+      worker(Task, [fn -> start_network end], restart: :transient),
+      worker(TempMonitor.TemperatureProbe, [:probe0])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -22,8 +20,6 @@ defmodule TempMonitor do
   end
 
   defp start_network do
-      Nerves.InterimWiFi.setup "wlan0", ssid: "2WIRE091", key_mgmt: "WPA-PSK", psk: "9917351447"
-#    Nerves.Networking.setup @interface, @opts
+    Nerves.InterimWiFi.setup "wlan0", ssid: "2WIRE091", key_mgmt: "WPA-PSK", psk: "9917351447"
   end
-
 end

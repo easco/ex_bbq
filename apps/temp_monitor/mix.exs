@@ -21,7 +21,7 @@ defmodule TempMonitor.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {TempMonitor, []},
-     applications: [:logger, :bbq_ui, :nerves_interim_wifi]]
+     applications: [:logger, :nerves_interim_wifi, :bbq_ui]]
   end
 
   def deps do

@@ -1,8 +1,5 @@
-.hg
-.hgignore
-
 .DS_Store
-*.mode?v?
-*.xccheckout
-xcuserdata/
-TestProducts/
+
+_build/
+apps/bbq_ui/web/elm/elm-stuff/
+deps/
