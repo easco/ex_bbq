@@ -21,14 +21,14 @@ defmodule TempMonitor.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {TempMonitor, []},
-     applications: [:logger, :nerves_interim_wifi, :bbq_ui]]
+     applications: [:logger, :nerves_interim_wifi, :phoenix_pubsub]]
   end
 
   def deps do
     [ {:nerves, "~> 0.3.0"},
       {:nerves_interim_wifi, "~> 0.1.0"},
+      {:phoenix_pubsub, "~> 1.0"},
 #      {:nerves_networking, github: "nerves-project/nerves_networking"},
-      {:bbq_ui, in_umbrella: true}
     ]
   end
 

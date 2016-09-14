@@ -13,6 +13,7 @@ defmodule BbqUi.Mixfile do
      compilers: [:phoenix, :gettext] ++ Mix.compilers,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     aliases: aliases,
      deps: deps()]
   end
 
@@ -21,7 +22,7 @@ defmodule BbqUi.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {BbqUi, []},
-     applications: [:phoenix, :phoenix_pubsub, :phoenix_html, :cowboy, :logger, :gettext]]
+     applications: [:phoenix, :phoenix_pubsub, :phoenix_html, :cowboy, :logger, :gettext, :temp_monitor]]
   end
 
   # Specifies which paths to compile per environment.
@@ -37,7 +38,13 @@ defmodule BbqUi.Mixfile do
      {:phoenix_html, "~> 2.6"},
      {:phoenix_live_reload, "~> 1.0", only: :dev},
      {:gettext, "~> 0.11"},
-     {:cowboy, "~> 1.0"}
+     {:cowboy, "~> 1.0"},
+     {:temp_monitor, in_umbrella: true}
    ]
+  end
+
+   def aliases do
+    ["deps.precompile": ["nerves.precompile", "deps.precompile"],
+     "deps.loadpaths":  ["deps.loadpaths", "nerves.loadpaths"]]
   end
 end
