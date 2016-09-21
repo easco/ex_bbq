@@ -1,4 +1,4 @@
-port module Cooking exposing (..)
+port module TemperatureTracking exposing (..)
 
 import Html exposing (..)
 import Html.App as App
@@ -11,30 +11,36 @@ import Phoenix.Socket
 import Phoenix.Channel
 import Phoenix.Push
 
-
+-- TimeStamp is a string with the time (h:m:s) a temperature sample was taken
 type alias TimeStamp = String
+
+-- Temperature (in ˚F)
 type alias Temperature = Float
 
 type alias TemperatureSample = (TimeStamp, Temperature)
-type alias TemperatureSamples =
-  List TemperatureSample
+type alias TemperatureSamples = List TemperatureSample
 
-type AppMessage
-  =  FinishInitialization
-  | UpdateGraph (TemperatureSamples)
-  | SocketAction (Phoenix.Socket.Msg AppMessage)
-  | JoinChannel
+-- Phoenix channel identifier usually "topic:subtopic"
+type alias PhoenixChannelName = String
+
+type Msg
+  =  CreateGraph (TemperatureSamples)
+  | JoinChannel (PhoenixChannelName)
   | ReceiveTemperatureData Json.Encode.Value
+  | SocketAction (Phoenix.Socket.Msg Msg)
+  
+type alias ApplicationCommand = Cmd Msg
 
 type alias Model = {
   temperatureData: TemperatureSamples,
-  phoenixSocket : Phoenix.Socket.Socket AppMessage
+  phoenixSocket : Phoenix.Socket.Socket Msg
 }
 
-port createGraph : TemperatureSamples -> Cmd msg
-port updateGraph : TemperatureSamples -> Cmd msg
+port callCreateGraph : TemperatureSamples -> Cmd msg
+port callUpdateGraph : TemperatureSamples -> Cmd msg
 
-graphData = []
+createGraph : TemperatureSamples -> Cmd Msg
+createGraph samples = Task.perform identity CreateGraph (Task.succeed samples)
 
 main : Program Never
 main =
@@ -44,39 +50,48 @@ main =
   , subscriptions = subscriptions
   }
 
-init : (Model, Cmd AppMessage)
+init : (Model, ApplicationCommand)
 init =
-  (initModel, buildCmd FinishInitialization)
+  let
+    startingModel = initModel
+    initCmd = Cmd.batch [
+      createGraph startingModel.temperatureData,
+      joinChannel "temperature_data:lobby"
+    ]
+  in
+  (startingModel, initCmd)
 
 initModel : Model
 initModel =
-  Model graphData initPhoenixSocket
+  Model [] initPhoenixSocket
 
-initPhoenixSocket : Phoenix.Socket.Socket AppMessage
+initPhoenixSocket : Phoenix.Socket.Socket Msg
 initPhoenixSocket =
     Phoenix.Socket.init (Debug.log "Connecting to" "ws://localhost:4000/socket/websocket")
-    |> Phoenix.Socket.withDebug
     |> Phoenix.Socket.on "temperature_data" "temperature_data:lobby" ReceiveTemperatureData
 
-update : AppMessage -> Model -> (Model, Cmd AppMessage)
+update : Msg -> Model -> (Model, ApplicationCommand)
 update msg model =
   case msg of
-      FinishInitialization ->
-        let
-          (channel_model, phoenixCommand) = update JoinChannel model
-        in
-          (channel_model, Cmd.batch [phoenixCommand, createGraph model.temperatureData])
-
-      UpdateGraph newSamples ->
-        (model, Cmd.none)
+      CreateGraph startingSamples ->
+        (model, callCreateGraph model.temperatureData)
 
       ReceiveTemperatureData raw ->
         case Json.Decode.decodeValue decodeTemperatureSamples raw of
           Ok samples ->
-              (model, updateGraph samples)
+              (model, callUpdateGraph samples)
 
           Err error ->
               (model, Cmd.none)
+
+      JoinChannel channelName ->
+        let
+          channel = Phoenix.Channel.init (Debug.log "Joining" channelName) -- "temperature_data:lobby"
+          (phoenixSocket, phoenixCommand) = Phoenix.Socket.join channel model.phoenixSocket
+        in
+          ({ model | phoenixSocket = phoenixSocket }
+          , Cmd.map SocketAction phoenixCommand
+          )
 
       SocketAction msg ->
         let
@@ -86,28 +101,16 @@ update msg model =
           , Cmd.map SocketAction phoenixCommand
         )
 
-      JoinChannel ->
-        let
-          channel = Phoenix.Channel.init (Debug.log "joining" "temperature_data:lobby")
-          (phoenixSocket, phoenixCommand) = Phoenix.Socket.join channel model.phoenixSocket
-        in
-          ({ model | phoenixSocket = phoenixSocket }
-          , Cmd.map SocketAction phoenixCommand
-          )
 
-view : Model -> Html AppMessage
+view : Model -> Html Msg
 view model =
   div [id "elm-div"] [
     canvas  [ id "myChart", width 400, height 200 ] []
   ]
 
-subscriptions : Model -> Sub AppMessage
+subscriptions : Model -> Sub Msg
 subscriptions model =
   Phoenix.Socket.listen model.phoenixSocket SocketAction
-
-buildCmd : AppMessage -> Cmd AppMessage
-buildCmd msg =
-  Task.perform identity identity (Task.succeed msg)
 
 decodeTemperatureSamples : Json.Decode.Decoder TemperatureSamples
 decodeTemperatureSamples =
@@ -119,3 +122,6 @@ decodeSingleTemperatureSample =
     Json.Decode.object2 (,)
       ("time" := Json.Decode.string)
       ("temperature" := Json.Decode.float)
+
+joinChannel channelName =
+  Task.perform identity JoinChannel (Task.succeed channelName)

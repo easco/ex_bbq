@@ -1,13 +1,17 @@
 defmodule BbqUi.Mixfile do
   use Mix.Project
 
+  @target System.get_env("NERVES_TARGET") || "rpi3"
+
   def project do
     [app: :bbq_ui,
      version: "0.0.1",
-     build_path: "../../_build",
-     config_path: "../../config/config.exs",
-     deps_path: "../../deps",
-     lockfile: "../../mix.lock",
+     target: @target,
+     archives: [nerves_bootstrap: "~> 0.1.4"],
+     deps_path: "../../deps/#{@target}",
+     build_path: "_build/#{@target}",
+     config_path: "config/#{@target}/config.exs",
+     lockfile: "./mix.lock",
      elixir: "~> 1.2",
      elixirc_paths: elixirc_paths(Mix.env),
      compilers: [:phoenix, :gettext] ++ Mix.compilers,
@@ -44,7 +48,18 @@ defmodule BbqUi.Mixfile do
   end
 
    def aliases do
-    ["deps.precompile": ["nerves.precompile", "deps.precompile"],
+    [ "deps.get": ["bbq.elm", "deps.get"],
+      "deps.precompile": ["nerves.precompile", "deps.precompile"],
      "deps.loadpaths":  ["deps.loadpaths", "nerves.loadpaths"]]
+  end
+end
+
+defmodule Mix.Tasks.Bbq.Elm do
+  @shortdoc "Uses the elm-package command to install elm packages" 
+  use Mix.Task
+
+  def run(_) do
+    Mix.shell.info "Installng Elm Packages"
+    System.cmd "elm-package", ["install", "--yes"], cd: Path.join(__DIR__, "web/static/elm"), into: IO.stream(:stdio, :line)
   end
 end

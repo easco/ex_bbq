@@ -9480,13 +9480,6 @@ var _user$project$Cooking$decodeTemperatureSamples = A2(
 		_elm_lang$core$Json_Decode_ops[':='],
 		'temperatures',
 		_elm_lang$core$Json_Decode$list(_user$project$Cooking$decodeSingleTemperatureSample)));
-var _user$project$Cooking$buildCmd = function (msg) {
-	return A3(
-		_elm_lang$core$Task$perform,
-		_elm_lang$core$Basics$identity,
-		_elm_lang$core$Basics$identity,
-		_elm_lang$core$Task$succeed(msg));
-};
 var _user$project$Cooking$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
@@ -9508,18 +9501,16 @@ var _user$project$Cooking$view = function (model) {
 					[]))
 			]));
 };
-var _user$project$Cooking$graphData = _elm_lang$core$Native_List.fromArray(
-	[]);
-var _user$project$Cooking$createGraph = _elm_lang$core$Native_Platform.outgoingPort(
-	'createGraph',
+var _user$project$Cooking$callCreateGraph = _elm_lang$core$Native_Platform.outgoingPort(
+	'callCreateGraph',
 	function (v) {
 		return _elm_lang$core$Native_List.toArray(v).map(
 			function (v) {
 				return [v._0, v._1];
 			});
 	});
-var _user$project$Cooking$updateGraph = _elm_lang$core$Native_Platform.outgoingPort(
-	'updateGraph',
+var _user$project$Cooking$callUpdateGraph = _elm_lang$core$Native_Platform.outgoingPort(
+	'callUpdateGraph',
 	function (v) {
 		return _elm_lang$core$Native_List.toArray(v).map(
 			function (v) {
@@ -9530,19 +9521,6 @@ var _user$project$Cooking$Model = F2(
 	function (a, b) {
 		return {temperatureData: a, phoenixSocket: b};
 	});
-var _user$project$Cooking$ReceiveTemperatureData = function (a) {
-	return {ctor: 'ReceiveTemperatureData', _0: a};
-};
-var _user$project$Cooking$initPhoenixSocket = A4(
-	_fbonetti$elm_phoenix_socket$Phoenix_Socket$on,
-	'temperature_data',
-	'temperature_data:lobby',
-	_user$project$Cooking$ReceiveTemperatureData,
-	_fbonetti$elm_phoenix_socket$Phoenix_Socket$withDebug(
-		_fbonetti$elm_phoenix_socket$Phoenix_Socket$init(
-			A2(_elm_lang$core$Debug$log, 'Connecting to', 'ws://localhost:4000/socket/websocket'))));
-var _user$project$Cooking$initModel = A2(_user$project$Cooking$Model, _user$project$Cooking$graphData, _user$project$Cooking$initPhoenixSocket);
-var _user$project$Cooking$JoinChannel = {ctor: 'JoinChannel'};
 var _user$project$Cooking$SocketAction = function (a) {
 	return {ctor: 'SocketAction', _0: a};
 };
@@ -9550,37 +9528,32 @@ var _user$project$Cooking$update = F2(
 	function (msg, model) {
 		var _p0 = msg;
 		switch (_p0.ctor) {
-			case 'FinishInitialization':
-				var _p1 = A2(_user$project$Cooking$update, _user$project$Cooking$JoinChannel, model);
-				var channel_model = _p1._0;
-				var phoenixCommand = _p1._1;
-				return {
-					ctor: '_Tuple2',
-					_0: channel_model,
-					_1: _elm_lang$core$Platform_Cmd$batch(
-						_elm_lang$core$Native_List.fromArray(
-							[
-								phoenixCommand,
-								_user$project$Cooking$createGraph(model.temperatureData)
-							]))
-				};
-			case 'UpdateGraph':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'CreateGraph':
+				return A2(
+					_elm_lang$core$Debug$log,
+					'creatingGraph',
+					{
+						ctor: '_Tuple2',
+						_0: model,
+						_1: _user$project$Cooking$callCreateGraph(model.temperatureData)
+					});
 			case 'ReceiveTemperatureData':
-				var _p2 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$Cooking$decodeTemperatureSamples, _p0._0);
-				if (_p2.ctor === 'Ok') {
+				var _p1 = A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$Cooking$decodeTemperatureSamples, _p0._0);
+				if (_p1.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
 						_0: model,
-						_1: _user$project$Cooking$updateGraph(_p2._0)
+						_1: _user$project$Cooking$callUpdateGraph(_p1._0)
 					};
 				} else {
 					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 				}
-			case 'SocketAction':
-				var _p3 = A2(_fbonetti$elm_phoenix_socket$Phoenix_Socket$update, _p0._0, model.phoenixSocket);
-				var phoenixSocket = _p3._0;
-				var phoenixCommand = _p3._1;
+			case 'JoinChannel':
+				var channel = _fbonetti$elm_phoenix_socket$Phoenix_Channel$init(
+					A2(_elm_lang$core$Debug$log, 'Joining', _p0._0));
+				var _p2 = A2(_fbonetti$elm_phoenix_socket$Phoenix_Socket$join, channel, model.phoenixSocket);
+				var phoenixSocket = _p2._0;
+				var phoenixCommand = _p2._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -9589,11 +9562,9 @@ var _user$project$Cooking$update = F2(
 					_1: A2(_elm_lang$core$Platform_Cmd$map, _user$project$Cooking$SocketAction, phoenixCommand)
 				};
 			default:
-				var channel = _fbonetti$elm_phoenix_socket$Phoenix_Channel$init(
-					A2(_elm_lang$core$Debug$log, 'joining', 'temperature_data:lobby'));
-				var _p4 = A2(_fbonetti$elm_phoenix_socket$Phoenix_Socket$join, channel, model.phoenixSocket);
-				var phoenixSocket = _p4._0;
-				var phoenixCommand = _p4._1;
+				var _p3 = A2(_fbonetti$elm_phoenix_socket$Phoenix_Socket$update, _p0._0, model.phoenixSocket);
+				var phoenixSocket = _p3._0;
+				var phoenixCommand = _p3._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -9606,15 +9577,52 @@ var _user$project$Cooking$update = F2(
 var _user$project$Cooking$subscriptions = function (model) {
 	return A2(_fbonetti$elm_phoenix_socket$Phoenix_Socket$listen, model.phoenixSocket, _user$project$Cooking$SocketAction);
 };
-var _user$project$Cooking$UpdateGraph = function (a) {
-	return {ctor: 'UpdateGraph', _0: a};
+var _user$project$Cooking$ReceiveTemperatureData = function (a) {
+	return {ctor: 'ReceiveTemperatureData', _0: a};
 };
-var _user$project$Cooking$FinishInitialization = {ctor: 'FinishInitialization'};
-var _user$project$Cooking$init = {
-	ctor: '_Tuple2',
-	_0: _user$project$Cooking$initModel,
-	_1: _user$project$Cooking$buildCmd(_user$project$Cooking$FinishInitialization)
+var _user$project$Cooking$initPhoenixSocket = A4(
+	_fbonetti$elm_phoenix_socket$Phoenix_Socket$on,
+	'temperature_data',
+	'temperature_data:lobby',
+	_user$project$Cooking$ReceiveTemperatureData,
+	_fbonetti$elm_phoenix_socket$Phoenix_Socket$withDebug(
+		_fbonetti$elm_phoenix_socket$Phoenix_Socket$init(
+			A2(_elm_lang$core$Debug$log, 'Connecting to', 'ws://localhost:4000/socket/websocket'))));
+var _user$project$Cooking$initModel = A2(
+	_user$project$Cooking$Model,
+	_elm_lang$core$Native_List.fromArray(
+		[]),
+	_user$project$Cooking$initPhoenixSocket);
+var _user$project$Cooking$JoinChannel = function (a) {
+	return {ctor: 'JoinChannel', _0: a};
 };
+var _user$project$Cooking$joinChannel = function (channelName) {
+	return A3(
+		_elm_lang$core$Task$perform,
+		_elm_lang$core$Basics$identity,
+		_user$project$Cooking$JoinChannel,
+		_elm_lang$core$Task$succeed(channelName));
+};
+var _user$project$Cooking$CreateGraph = function (a) {
+	return {ctor: 'CreateGraph', _0: a};
+};
+var _user$project$Cooking$tellMeToCreateGraph = function (samples) {
+	return A3(
+		_elm_lang$core$Task$perform,
+		_elm_lang$core$Basics$identity,
+		_user$project$Cooking$CreateGraph,
+		_elm_lang$core$Task$succeed(samples));
+};
+var _user$project$Cooking$init = function () {
+	var startingModel = _user$project$Cooking$initModel;
+	var initCmd = _elm_lang$core$Platform_Cmd$batch(
+		_elm_lang$core$Native_List.fromArray(
+			[
+				_user$project$Cooking$tellMeToCreateGraph(startingModel.temperatureData),
+				_user$project$Cooking$joinChannel('temperature_data:lobby')
+			]));
+	return {ctor: '_Tuple2', _0: startingModel, _1: initCmd};
+}();
 var _user$project$Cooking$main = {
 	main: _elm_lang$html$Html_App$program(
 		{init: _user$project$Cooking$init, view: _user$project$Cooking$view, update: _user$project$Cooking$update, subscriptions: _user$project$Cooking$subscriptions})

@@ -1,16 +1,21 @@
-// Brunch automatically concatenates all files in your
-// watched paths. Those paths can be configured at
-// config.paths.watched in "brunch-config.js".
-//
-// However, those files will only be executed if
-// explicitly imported. The only exception are files
-// in vendor, which are never wrapped in imports and
-// therefore are always executed.
-
-// Import dependencies
-//
-// If you no longer want to use a dependency, remember
-// to also remove its path from "config.paths.watched".
 import "phoenix_html"
+import CookingModule from "./cooking"
 
-var Chart = require('chart.js')
+const modules = {
+    CookingModule
+};
+
+function handleDOMContentLoaded() {
+    const module_js_file = document.getElementsByTagName('body')[0].dataset.bbquiModuleName;
+    if(modules[module_js_file]) {
+        window.currentModule = new (modules[module_js_file])()
+        window.currentModule.moduleWillShow()
+    }
+}
+
+function handleDocumentUnload() {
+    window.currentModule.moduleWillHide();
+}
+
+window.addEventListener('DOMContentLoaded', handleDOMContentLoaded, false);
+window.addEventListener('unload', handleDocumentUnload, false);

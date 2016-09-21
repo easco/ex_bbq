@@ -1,5 +1,6 @@
 .DS_Store
 
 _build/
-apps/bbq_ui/web/elm/elm-stuff/
+_images/
 deps/
+apps/bbq_ui/static/web/elm/elm-stuff/
