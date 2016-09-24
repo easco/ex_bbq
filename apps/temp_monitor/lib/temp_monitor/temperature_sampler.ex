@@ -1,8 +1,7 @@
 defmodule TempMonitor.TemperatureSampler do
   use GenServer
 
-  defstruct name: :probe0, temperature_samples: [], 
-    temperature_goal: 225.0, num_samples_taken: 0  # these are for mock/debugging
+  defstruct name: :probe0, temperature_samples: [] # these are for mock/debugging
 
   @retained_sample_length 10
 
@@ -26,11 +25,10 @@ defmodule TempMonitor.TemperatureSampler do
   def handle_info(:new_temperature, state) do
     # do some work here
     {:ok, current_time} = NaiveDateTime.from_erl(:calendar.local_time())
-    temperature = temperature_from_hardware(state)
+    temperature = temperature_from_hardware()
 
     new_state = %__MODULE__{ state |
-      temperature_samples: add_temperature_sample(state.temperature_samples, {current_time, temperature}),
-      num_samples_taken: state.num_samples_taken + 1
+      temperature_samples: add_temperature_sample(state.temperature_samples, {current_time, temperature})
       }
 
     Phoenix.PubSub.broadcast(TempMonitor.PubSub, pubsub_topic_name(new_state.name), %{samples: new_state.temperature_samples})
@@ -43,10 +41,8 @@ defmodule TempMonitor.TemperatureSampler do
     Enum.take([new_sample | sample_list], @retained_sample_length)
   end
 
-  defp temperature_from_hardware(state) do
-    # Normally we'd actually go to the hardware for a temperature sample.  In this
-    # case we simply calculate a fake temperature
-    min(state.temperature_goal, state.temperature_goal * state.num_samples_taken / 30.0)
+  defp temperature_from_hardware() do
+    TempMonitor.SimGrill.get_temperature(TempMonitor.SimGrill)
   end
 
   @millisecondsPerSecond 1000

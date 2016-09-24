@@ -20,7 +20,9 @@ defmodule BbqUi.Router do
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", BbqUi do
-  #   pipe_through :api
-  # end
+  scope "/api", BbqUi do
+    pipe_through :api
+
+    post "/burner", BurnerController, :burner
+  end
 end

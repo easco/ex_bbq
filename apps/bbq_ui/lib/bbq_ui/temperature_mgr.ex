@@ -12,7 +12,7 @@ defmodule BbqUi.TemperatureMgr do
     {:ok, []}
   end
 
-  def handle_info(msg = %{samples: temperature_data}, state) do
+  def handle_info(%{samples: temperature_data}, state) do
     update_temperature_graph(temperature_data)
     {:noreply, state}
   end

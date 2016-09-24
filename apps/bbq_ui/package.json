@@ -8,7 +8,8 @@
   "dependencies": {
     "chart.js": "^2.2.2",
     "phoenix": "file:../../deps/rpi3/phoenix",
-    "phoenix_html": "file:../../deps/rpi3/phoenix_html"
+    "phoenix_html": "file:../../deps/rpi3/phoenix_html",
+    "uri-js": "^2.1.1"
   },
   "devDependencies": {
     "babel-core": "~6.0.0",

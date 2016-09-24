@@ -1,5 +1,7 @@
 var Chart = require('chart.js')
-var Elm = require('../elm/Dashboard.elm');
+var Elm = require('../elm/Dashboard.elm')
+var URI = require('uri-js')
+
 import AppModule from './app_module'
 
 function createChart(temperature_samples) {
@@ -52,19 +54,36 @@ function updateChart(temperature_samples) {
     window.temperatureChart.update()
 }
 
+function socketURL() {
+    var url = URI.serialize(
+        {
+            scheme : "ws",
+            host: window.location.host,
+            port: window.location.port,
+            path: "/socket/websocket"
+        }
+    )
+
+    return unescape(url)
+}
+
 export default class Cooking extends AppModule {
   moduleWillShow () {
     console.log("Cooking.moduleWillShow")
 
             // Set up our Elm App
     const elmDiv = document.querySelector("#elm-container");
-    const elmApp = Elm.TemperatureTracking.embed(elmDiv);        
+    const elmApp = Elm.TemperatureTracking.embed(elmDiv,
+            {
+                socket: socketURL()
+            }
+        );
 
     elmApp.ports.callCreateGraph.subscribe(createChart)
     elmApp.ports.callUpdateGraph.subscribe(updateChart)
   }
 
   moduleWillHide () {
-    console.log("Cooking.moduleWillHide") 
+    console.log("Cooking.moduleWillHide")
   }
 }

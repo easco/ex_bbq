@@ -10,6 +10,7 @@ defmodule TempMonitor do
     children = [
       worker(Task, [fn -> start_network end], restart: :transient),
       supervisor(Phoenix.PubSub.PG2, [TempMonitor.PubSub, []]),
+      worker(TempMonitor.SimGrill, [[name: TempMonitor.SimGrill]]),
       worker(TempMonitor.TemperatureSampler, [:probe0])
     ]
 
